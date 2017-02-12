@@ -8,10 +8,22 @@ class Argument(object):
     # If the argument is not specified, it will resort to this default.
     default = ""
     # If an argument is positional, it is specified without the - or -- syntax
-    # or an option string.
+    # or an option string. By default arguments are not positional.
     positional = False
+    # If an argument is required then it must be specified. Typically
+    # positional arguments are always required because it would be impossible
+    # to parse positional arguments if they were all optional.
+    required = False
+    # validator is a function which takes the value from the command line and
+    # tries to coerce it to a desired type. It returns ValueError if there is
+    # a problem.
+    validator = None
+    # If multiple is true, then one or more arguments may be parsed from the
+    # command line and collected into a python list.
+    multiple = False
 
-    def __init__(self, nargs="", default="", help="", positional=None):
+    def __init__(self, nargs="", default="", help="", positional=None,
+                 required=False, validator=None, multiple=False):
         # The self.x = x or self.x pattern allows us to set defaults using
         # class variables. Note that if the instance does not have the property
         # x set, then python magically looks to the class variables for one
@@ -21,6 +33,9 @@ class Argument(object):
         # "immutable").
         self.nargs = nargs or self.nargs
         self.default = default or self.default
+        self.required = required or self.required
+        self.validator = validator or self.validator
+        self.multiple = multiple or self.multiple
         self.help = help
 
         # The positional kwarg always overrides the class variable.
@@ -33,4 +48,19 @@ class Argument(object):
         if not self.positional:
             name = "--" + name
 
-        parser.add_argument(name, help=self.help)
+        kwargs = {
+            "help": self.help,
+            "default": self.default,
+            "type": self.validator,
+        }
+
+        if self.multiple:
+            kwargs["nargs"] = "+" if self.required else "*"
+
+        parser.add_argument(name, **kwargs)
+
+    def process_value(self, value):
+        if self.multiple and not value:
+            return []
+
+        return value

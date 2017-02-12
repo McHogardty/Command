@@ -27,7 +27,7 @@ class Command(object):
         description = d.get("__description__", None)
 
         self.parser = argparse.ArgumentParser(description=description)
-        self.args = args = []
+        self.args = args = {}
 
         # Now loop through the class-level definitions and find all of the
         # arguments. Currently we don't check that the variable is named in
@@ -38,7 +38,7 @@ class Command(object):
                 continue
 
             value.add_to_parser(prop, self.parser)
-            self.args.append(prop)
+            self.args[prop] = value
 
     def parse_args(self):
         """This method parses the arguments provided on the command line. It
@@ -51,7 +51,9 @@ class Command(object):
         parsed_args = self.parser.parse_args()
 
         for arg in self.args:
-            setattr(self, arg, getattr(parsed_args, arg))
+            value = getattr(parsed_args, arg)
+            value = self.args[arg].process_value(value)
+            setattr(self, arg, value)
 
     @classmethod
     def run(cls):
