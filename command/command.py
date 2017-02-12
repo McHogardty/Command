@@ -16,8 +16,9 @@ class Command(object):
     - __description__: a human-readable description of what the program does.
     - __logger__: a logging object for logging of errors and warnings.
 
-    The command is run by calling the class method Command.run. This allows it
-    to be used directly in a setuptools setup config.
+    The command is run by calling the class method Command.run(). This allows
+    it to be used directly in a setuptools setup config for a command line
+    script.
     """
 
     def __init__(self, *args, **kwargs):
@@ -28,6 +29,9 @@ class Command(object):
 
         self.parser = argparse.ArgumentParser(description=description)
         self.args = args = {}
+
+        # TODO: Add a logger.
+        # TODO: Keep arguments in the order in which they were defined.
 
         # Now loop through the class-level definitions and find all of the
         # arguments. Currently we don't check that the variable is named in
@@ -58,8 +62,12 @@ class Command(object):
     @classmethod
     def run(cls):
         command = cls()
+        command.before_parse()
         command.parse_args()
         command.main()
+
+    def before_parse(self):
+        pass
 
     def main(self):
         pass
