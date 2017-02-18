@@ -8,7 +8,9 @@ from .argument import Argument
 class Command(object):
     """The base class for a command-line program. It allows for a declarative-
     style syntax for quickly and simply creating python programs. At the
-    moment it is essentially a wrapper around the argparse module.
+    moment it is essentially a wrapper around the argparse module. Subclasses
+    of Command will automatically include arguments defined on parent classes
+    (unless overridden).
 
     Arguments are defined as class variables, each of which is set to an
     instance of a subclass of command.Argument.
