@@ -75,6 +75,8 @@ class Argument(object):
 
         if self.multiple:
             kwargs["nargs"] = "+" if self.required else "*"
+        elif self.positional and not self.required:
+            kwargs["nargs"] = "?"
 
         parser.add_argument(name, **kwargs)
 

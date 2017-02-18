@@ -1,5 +1,6 @@
 import argparse
 import collections
+import inspect
 
 from .argument import Argument
 
@@ -17,40 +18,73 @@ class Command(object):
     - __description__: a human-readable description of what the program does.
     - __logger__: a logging object for logging of errors and warnings.
 
+    Subcommands are defined by assigning subclasses of Command to class
+    variables. The class variable will be used as the name of the subcommand.
+
     The command is run by calling the class method Command.run(). This allows
     it to be used directly in a setuptools setup config for a command line
     script.
     """
 
     def __init__(self, *args, **kwargs):
-        super(Command, self).__init__(*args, **kwargs)
-
         d = self.__class__.__dict__
-        description = d.get("__description__", None)
-        self.__log = d.get("__logger__", None)
-
-        self.parser = argparse.ArgumentParser(description=description)
+        self._description = d.get("__description__", None)
+        self._log = d.get("__logger__", None)
+        self._selected_command = None
+        self._subcommand_name = d.get("__subcommand_name__", "command")
 
         args = []
+        subcommands = []
 
         # Now loop through the class-level definitions and find all of the
-        # arguments. Currently we don't check that the variable is named in
-        # a funny way (e.g. a special __x__ variable). As long as it's an
-        # argument, assume the name of the variable is passable.
-        for prop, value in d.items():
-            if not isinstance(value, Argument):
+        # arguments and subcommands. We look at every class in the inheritance
+        # tree as class variables in super classes are not added to the
+        # __dict__ of a subclass.
+        # Currently we don't check that the variable is named in a funny way
+        # (e.g. a special __x__ variable). As long as it's an argument or a
+        # command, assume the name of the variable is passable.
+        for cls in self.__class__.mro():
+            if not issubclass(cls, Command):
                 continue
 
-            args.append((prop, value))
+            for prop, value in cls.__dict__.items():
+                if isinstance(value, Argument):
+                    args.append((prop, value))
+                elif inspect.isclass(value) and issubclass(value, Command):
+                    subcommands.append((prop, value))
 
         # Order the arguments based on the order in which the instances were
         # created, which is the same as the order in which they were written
         # down in the class.
         args.sort(key=lambda x: x[1]._instance_id)
         self.args = collections.OrderedDict(args)
+        self.subcommands = collections.OrderedDict(subcommands)
+
+    def add_to_parser(self, parser):
+        """This method is called with an argparse parser object as the sole
+        argument. The command should add its arguments to the parser, including
+        subcommands."""
+        if self.subcommands:
+            subparsers = parser.add_subparsers(metavar=self._subcommand_name,
+                                               dest="__subparser__")
+            subparsers.required = not self.args
+
+            for name, subcommand in self.subcommands.items():
+                subcommand = subcommand()
+                subparser = subparsers.add_parser(name,
+                                                  help=subcommand._description)
+                subcommand.add_to_parser(subparser)
 
         for k, v in self.args.items():
-            v.add_to_parser(k, self.parser)
+            v.add_to_parser(k, parser)
+
+    def get_args(self, parsed_args):
+        """This method is called after the arguments are parsed. The command
+        should get the relevant arguments."""
+        for arg in self.args:
+            value = getattr(parsed_args, arg, None)
+            value = self.args[arg].process_value(value)
+            setattr(self, arg, value)
 
     def parse_args(self):
         """This method parses the arguments provided on the command line. It
@@ -60,28 +94,55 @@ class Command(object):
         definitions).
         """
 
-        parsed_args = self.parser.parse_args()
+        parser = argparse.ArgumentParser(description=self._description)
 
-        for arg in self.args:
-            value = getattr(parsed_args, arg)
-            value = self.args[arg].process_value(value)
-            setattr(self, arg, value)
+        self.add_to_parser(parser)
 
-    def error(self, s="", run_exit=True, error_code=1, *args):
-        """A helper method which should be called when an error occurs."""
-        if self.__log:
-            self.__log.error(s, *args)
+        parsed_args = parser.parse_args()
 
-        print("Error:", s * args)
-        if run_exit:
-            exit(error_code)
+        self._selected_command = self
+        if self.subcommands:
+            subparser = parsed_args.__subparser__
 
-    def warning(self, s="", *args):
+            if subparser:
+                self._selected_command = self.subcommands[subparser]()
+
+        self.get_args(parsed_args)
+
+    def error(self, *args, **kwargs):
+        """A helper method which should be called when an error occurs.
+        The first argument should be a format string, followed by the format
+        arguments.
+
+        It takes the following kwargs:
+        - run_exit: Whether or not to exit after logging the error.
+        - error_code: the code to be passed to the system exit function.
+        """
+
+        # args should be a tuple, with the first argument a format string
+        # and the rest of the arguments the format args.
+        s = args[0]
+        args = args[1:]
+        if self._log:
+            self._log.error(s, *args)
+
+        print("Error:", s % args)
+        if kwargs.get("run_exit", True):
+            exit(kwargs.get("error_code", 1))
+
+    def warning(self, *args, **kwargs):
         """A helper method which should be called to warn the user."""
-        if self.__log:
-            self.__log.warning(s, *args)
 
-        print("Warning:", s * args)
+        # warning works the same way as error
+        s = args[0]
+        args = args[1:]
+        if self._log:
+            self._log.warning(s, *args)
+
+        print("Warning:", s % args)
+
+    def _run(self):
+        self._selected_command.main()
 
     @classmethod
     def run(cls):
@@ -89,7 +150,7 @@ class Command(object):
         command = cls()
         command.before_parse()
         command.parse_args()
-        command.main()
+        command._run()
 
     def before_parse(self):
         """Use this hook for dynamic behaviour which needs to occur before the

@@ -1,4 +1,4 @@
-from command import Argument, Command, Integer
+from command import Command, Integer
 
 
 # These variables are used to represent the mathematical operations.
@@ -8,27 +8,51 @@ MULTIPLY = "multiply"
 DIVIDE = "divide"
 
 
-class Calculator(Command):
-    __description__ = ("This program adds together numbers provided on the"
-                       "command line.")
-
-    operation = Argument(positional=True, required=True,
-                         choices=[ADD, SUBTRACT, MULTIPLY, DIVIDE],
-                         help="The operation to perform on the numbers.")
+class Operation(Command):
     first = Integer(positional=True, required=True,
                     help="The first number.")
     second = Integer(positional=True, required=True,
                      help="The second number.")
 
+
+class Add(Operation):
+    __description__ = "Add together two numbers."
+
     def main(self):
-        if self.operation == ADD:
-            print(self.first + self.second)
-        elif self.operation == SUBTRACT:
-            print(self.first - self.second)
-        elif self.operation == MULTIPLY:
-            print(self.first * self.second)
-        elif self.operation == DIVIDE:
-            print(self.first / self.second)
+        print(self.first + self.second)
+
+
+class Subtract(Operation):
+    __description__ = "Find the difference of two numbers."
+
+    def main(self):
+        print(self.first - self.second)
+
+
+class Multiply(Operation):
+    __description__ = "Multiply two numbers."
+
+    def main(self):
+        print(self.first * self.second)
+
+
+class Divide(Operation):
+    __description__ = "Divide two numbers."
+
+    def main(self):
+        print(self.first / self.second)
+
+
+class Calculator(Command):
+    __description__ = ("This program adds together numbers provided on the "
+                       "command line.")
+
+    __subcommand_name__ = "operation"
+
+    add = Add
+    subtract = Subtract
+    multiply = Multiply
+    divide = Divide
 
 
 if __name__ == "__main__":
