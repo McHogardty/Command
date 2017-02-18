@@ -1,13 +1,6 @@
 from command import Command, Integer
 
 
-# These variables are used to represent the mathematical operations.
-ADD = "add"
-SUBTRACT = "subtract"
-MULTIPLY = "multiply"
-DIVIDE = "divide"
-
-
 class Operation(Command):
     first = Integer(positional=True, required=True,
                     help="The first number.")
