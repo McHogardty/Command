@@ -37,7 +37,7 @@ class Divide(Operation):
 
 
 class Calculator(Command):
-    __description__ = ("This program adds together numbers provided on the "
+    __description__ = ("This program operates on two numbers provided on the "
                        "command line.")
 
     __subcommand_name__ = "operation"
