@@ -3,9 +3,9 @@ from command import Command, Integer
 
 class Operation(Command):
     first = Integer(positional=True, required=True,
-                    help="The first number.")
+                    help_string="The first number.")
     second = Integer(positional=True, required=True,
-                     help="The second number.")
+                     help_string="The second number.")
 
 
 class Add(Operation):
@@ -37,8 +37,8 @@ class Divide(Operation):
 
 
 class Calculator(Command):
-    __description__ = ("This program operates on two numbers provided on the "
-                       "command line.")
+    __description__ = "This program operates on two numbers provided on the " \
+                      "command line."
 
     __subcommand_name__ = "operation"
 

@@ -2,8 +2,8 @@ from command import Argument, Command
 
 
 class HelloWorld(Command):
-    __description__ = ("This program says hello to whomever you want. If no "
-                       "argument is provided, it will say hello to everybody.")
+    __description__ = "This program says hello to whomever you want. If no " \
+                      "argument is provided, it will say hello to everybody."
 
     name = Argument(positional=True, default="world")
 

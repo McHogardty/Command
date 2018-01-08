@@ -73,8 +73,10 @@ class Command(object):
 
             for name, subcommand in self.subcommands.items():
                 subcommand = subcommand()
-                subparser = subparsers.add_parser(name,
-                                                  help=subcommand._description)
+                subparser = subparsers.add_parser(
+                    name,
+                    help=subcommand._description
+                )
                 subcommand.add_to_parser(subparser)
 
         for k, v in self.args.items():
@@ -83,18 +85,18 @@ class Command(object):
     def get_args(self, parsed_args):
         """This method is called after the arguments are parsed. The command
         should get the relevant arguments."""
-        for arg in self.args:
+
+        for arg in self._selected_command.args:
             value = getattr(parsed_args, arg, None)
-            value = self.args[arg].process_value(value)
-            setattr(self, arg, value)
+            value = self._selected_command.args[arg].process_value(value)
+            setattr(self._selected_command, arg, value)
 
     def parse_args(self):
         """This method parses the arguments provided on the command line. It
         is intentionally separate from __init__ to allow for a hook to be
         called before the arguments are parsed (for example, to dynamically
         add arguments - you cannot have for loops or other logic in the class
-        definitions).
-        """
+        definitions)."""
 
         parser = argparse.ArgumentParser(description=self._description)
 

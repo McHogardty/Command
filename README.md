@@ -5,4 +5,3 @@ A small Python framework for creating command-line programs in a declarative sty
 TODO:
 * Add logging, warnings and errors.
 * Make sure that arguments are kept in the order in which they are defined.
-* Implement subcommands.

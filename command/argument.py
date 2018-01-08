@@ -8,8 +8,7 @@ class Argument(object):
     An Argument implements two methods: add_to_parser(self, name, parser) and
     process_value(self, value). add_to_parser is called when the argument needs
     to be added to the argparse.Parser. process_value is called after the value
-    is parsed to allow for custom processing of the value.
-    """
+    is parsed to allow for custom processing of the value."""
 
     # The argparse string specifying how many arguments should be collected.
     nargs = ""
@@ -35,7 +34,7 @@ class Argument(object):
     _creation_counter = threading.Lock()
     _instance_count = 0
 
-    def __init__(self, nargs="", default="", help="", positional=None,
+    def __init__(self, nargs="", default="", help_string="", positional=None,
                  required=False, validator=None, multiple=False, choices=None):
         # The self.x = x or self.x pattern allows us to set defaults using
         # class variables. Note that if the instance does not have the property
@@ -50,7 +49,7 @@ class Argument(object):
         self.validator = validator or self.validator
         self.multiple = multiple or self.multiple
         self.choices = choices or self.choices
-        self.help = help
+        self.help = help_string
 
         # The positional kwarg always overrides the class variable.
         if positional is not None:
